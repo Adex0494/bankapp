@@ -72,7 +72,7 @@ const displayMovements = function (movements) {
       <div class="movements__type movements__type--${type}">${
       i + 1
     } ${type}</div>
-      <div class="movements__value">${mov}</div>
+      <div class="movements__value">${mov}€</div>
     </div>
     `;
 
@@ -85,6 +85,29 @@ displayMovements(account1.movements);
 /////////////////////////////////////////////////
 // LECTURES
 
+const calcBalanceAndPrint = function (movArr) {
+  const balance = movArr.reduce((acc, cur) => acc + cur, 0);
+  labelBalance.textContent = `${balance}€`;
+};
+
+const calcDisplaySummary = function (movements) {
+  const income = movements
+    .filter(mov => mov > 0)
+    .reduce((acc, cur) => acc + cur, 0);
+  labelSumIn.textContent = `${income}€`;
+  const expense = movements
+    .filter(mov => mov < 0)
+    .reduce((acc, cur) => acc + cur, 0);
+  labelSumOut.textContent = `${Math.abs(expense)}€`;
+
+  let interest = movements
+    .filter(mov => mov > 0)
+    .map(mov => mov * 0.012)
+    .filter(int => int >= 1)
+    .reduce((acc, int) => acc + int, 0);
+  labelSumInterest.textContent = `${interest}€`;
+};
+
 const currencies = new Map([
   ['USD', 'United States dollar'],
   ['EUR', 'Euro'],
@@ -94,3 +117,21 @@ const currencies = new Map([
 const movements = [200, 450, -400, 3000, -650, -130, 70, 1300];
 
 /////////////////////////////////////////////////
+const createUsernames = function (accs) {
+  accs.forEach(function (acc) {
+    acc.username = acc.owner
+      .toLowerCase()
+      .split(' ')
+      .map(nameSplit => nameSplit[0])
+      .join('');
+  });
+};
+
+// createUsernames(accounts);
+// calcBalanceAndPrint(movements);
+// calcDisplaySummary(movements);
+
+// calcBalanceAndPrint(movements);
+//let userNames = accounts.map(acc => getFirstLettersOfName(acc.owner));
+//console.log(userNames);
+//console.log(getFirstLettersOfName('Ariangel Díaz Espaillat'));
