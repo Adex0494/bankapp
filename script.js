@@ -1,12 +1,11 @@
 'use strict';
 
 /////////////////////////////////////////////////
-/////////////////////////////////////////////////
-// BANKIST APP
+// BANKAPP
 
 // Data
 const account1 = {
-  owner: 'Jonas Schmedtmann',
+  owner: 'Ariangel Díaz Espaillat',
   movements: [200, 450, -400, 3000, -650, -130, 70, 1300],
   interestRate: 1.2, // %
   pin: 1111,
@@ -35,6 +34,12 @@ const account4 = {
 
 const accounts = [account1, account2, account3, account4];
 
+const currencies = new Map([
+  ['USD', 'United States dollar'],
+  ['EUR', 'Euro'],
+  ['GBP', 'Pound sterling'],
+]);
+
 // Elements
 const labelWelcome = document.querySelector('.welcome');
 const labelDate = document.querySelector('.date');
@@ -61,62 +66,71 @@ const inputLoanAmount = document.querySelector('.form__input--loan-amount');
 const inputCloseUsername = document.querySelector('.form__input--user');
 const inputClosePin = document.querySelector('.form__input--pin');
 
+// Functions
+
+const getHtmlMovString = function (mov, i) {
+  const type = mov > 0 ? 'deposit' : 'withdrawal';
+
+  return `
+  <div class="movements__row">
+    <div class="movements__type movements__type--${type}">${i + 1} ${type}</div>
+    <div class="movements__value">${mov}€</div>
+  </div>
+  `;
+};
+
 const displayMovements = function (movements) {
   containerMovements.innerHTML = '';
 
   movements.forEach(function (mov, i) {
-    const type = mov > 0 ? 'deposit' : 'withdrawal';
-
-    const html = `
-    <div class="movements__row">
-      <div class="movements__type movements__type--${type}">${
-      i + 1
-    } ${type}</div>
-      <div class="movements__value">${mov}€</div>
-    </div>
-    `;
-
-    containerMovements.insertAdjacentHTML('afterbegin', html);
+    containerMovements.insertAdjacentHTML(
+      'afterbegin',
+      getHtmlMovString(mov, i)
+    );
   });
 };
-console.log(account1.movements);
-displayMovements(account1.movements);
-/////////////////////////////////////////////////
-/////////////////////////////////////////////////
-// LECTURES
 
-const calcBalanceAndPrint = function (movArr) {
-  const balance = movArr.reduce((acc, cur) => acc + cur, 0);
-  labelBalance.textContent = `${balance}€`;
+const calcBalance = function (movements) {
+  return movements.reduce((acc, cur) => acc + cur, 0);
 };
 
-const calcDisplaySummary = function (movements) {
+const calcBalanceAndPrint = function (movements) {
+  labelBalance.textContent = `${calcBalance(movements)}€`;
+};
+
+const calcExpenses = function (movements) {
+  return movements.filter(mov => mov < 0).reduce((acc, cur) => acc + cur, 0);
+};
+
+const calcDisplaySummary = function (movements, interestRate) {
   const income = movements
     .filter(mov => mov > 0)
     .reduce((acc, cur) => acc + cur, 0);
   labelSumIn.textContent = `${income}€`;
-  const expense = movements
-    .filter(mov => mov < 0)
-    .reduce((acc, cur) => acc + cur, 0);
-  labelSumOut.textContent = `${Math.abs(expense)}€`;
+
+  labelSumOut.textContent = `${Math.abs(calcExpenses(movements))}€`;
 
   let interest = movements
     .filter(mov => mov > 0)
-    .map(mov => mov * 0.012)
+    .map(mov => (mov * interestRate) / 100)
     .filter(int => int >= 1)
     .reduce((acc, int) => acc + int, 0);
   labelSumInterest.textContent = `${interest}€`;
 };
 
-const currencies = new Map([
-  ['USD', 'United States dollar'],
-  ['EUR', 'Euro'],
-  ['GBP', 'Pound sterling'],
-]);
+const transferMoney = function (originAcc, destinAcc, amount) {
+  if (originAcc.movements.reduce((acc, cur) => acc + cur, 0) >= amount) {
+    originAcc.movements.push(-amount);
+    destinAcc.movements.push(amount);
+    containerMovements.insertAdjacentHTML(
+      'afterbegin',
+      getHtmlMovString(-amount, destinAcc.movements.length - 1)
+    );
+    labelBalance.textContent = `${calcBalance(originAcc.movements)}€`;
+    labelSumOut.textContent = `${Math.abs(calcExpenses(originAcc.movements))}€`;
+  } else alert('There is not enough balance in the account');
+};
 
-const movements = [200, 450, -400, 3000, -650, -130, 70, 1300];
-
-/////////////////////////////////////////////////
 const createUsernames = function (accs) {
   accs.forEach(function (acc) {
     acc.username = acc.owner
@@ -127,11 +141,67 @@ const createUsernames = function (accs) {
   });
 };
 
-// createUsernames(accounts);
-// calcBalanceAndPrint(movements);
-// calcDisplaySummary(movements);
+//const movements = [200, 450, -400, 3000, -650, -130, 70, 1300];
+createUsernames(accounts);
 
-// calcBalanceAndPrint(movements);
-//let userNames = accounts.map(acc => getFirstLettersOfName(acc.owner));
-//console.log(userNames);
-//console.log(getFirstLettersOfName('Ariangel Díaz Espaillat'));
+let currentAccount;
+
+const logIn = function (username, pin) {
+  const account = accounts.find(
+    acc => acc.username === username && acc.pin === Number(pin)
+  );
+  if (!account) {
+    containerApp.style.opacity = 0;
+    alert('Username or pin incorrect.');
+  } else {
+    currentAccount = account;
+    labelWelcome.textContent = `Welcome, ${account.owner.split(' ')[0]}`;
+    displayMovements(account.movements);
+    calcBalanceAndPrint(account.movements);
+    calcDisplaySummary(account.movements, account.interestRate);
+    containerApp.style.opacity = 100;
+    inputLoginUsername.value = inputLoginPin.value = '';
+    inputCloseUsername.blur();
+    inputLoginPin.blur();
+  }
+};
+btnLogin.addEventListener('click', function (e) {
+  e.preventDefault();
+  logIn(inputLoginUsername.value, inputLoginPin.value);
+});
+
+btnTransfer.addEventListener('click', function (e) {
+  e.preventDefault();
+  let destinAcc = accounts.find(acc => acc.username === inputTransferTo.value);
+  if (
+    destinAcc &&
+    destinAcc.username !== currentAccount.username &&
+    Number(inputTransferAmount.value) > 0
+  )
+    transferMoney(currentAccount, destinAcc, Number(inputTransferAmount.value));
+  else {
+    alert('There is a problem with the transaction');
+  }
+  inputTransferTo.value = inputTransferAmount.value = '';
+  inputTransferTo.blur();
+  inputTransferAmount.blur();
+});
+
+btnClose.addEventListener('click', function (e) {
+  e.preventDefault();
+  if (
+    inputCloseUsername.value === currentAccount.username &&
+    Number(inputClosePin.value) === currentAccount.pin
+  ) {
+    accounts.splice(
+      accounts.findIndex(acc => acc.username === currentAccount.username),
+      1
+    );
+    alert('The account has been eliminated succesfully');
+
+    containerApp.style.opacity = 0;
+  } else alert('Incorrect credentials');
+  inputClosePin.value = inputCloseUsername.value = '';
+  inputCloseUsername.blur();
+  inputClosePin.blur();
+});
