@@ -79,10 +79,12 @@ const getHtmlMovString = function (mov, i) {
   `;
 };
 
-const displayMovements = function (movements) {
+const displayMovements = function (movements, sort = false) {
   containerMovements.innerHTML = '';
 
-  movements.forEach(function (mov, i) {
+  const movs = sort ? movements.slice().sort((a, b) => a - b) : movements;
+
+  movs.forEach(function (mov, i) {
     containerMovements.insertAdjacentHTML(
       'afterbegin',
       getHtmlMovString(mov, i)
@@ -118,15 +120,19 @@ const calcDisplaySummary = function (movements, interestRate) {
   labelSumInterest.textContent = `${interest}€`;
 };
 
+const addTransAndRefreshBalance = function (amount, acc) {
+  containerMovements.insertAdjacentHTML(
+    'afterbegin',
+    getHtmlMovString(amount, acc.movements.length - 1)
+  );
+  labelBalance.textContent = `${calcBalance(acc.movements)}€`;
+};
+
 const transferMoney = function (originAcc, destinAcc, amount) {
   if (originAcc.movements.reduce((acc, cur) => acc + cur, 0) >= amount) {
     originAcc.movements.push(-amount);
     destinAcc.movements.push(amount);
-    containerMovements.insertAdjacentHTML(
-      'afterbegin',
-      getHtmlMovString(-amount, destinAcc.movements.length - 1)
-    );
-    labelBalance.textContent = `${calcBalance(originAcc.movements)}€`;
+    addTransAndRefreshBalance(-amount, originAcc);
     labelSumOut.textContent = `${Math.abs(calcExpenses(originAcc.movements))}€`;
   } else alert('There is not enough balance in the account');
 };
@@ -145,6 +151,7 @@ const createUsernames = function (accs) {
 createUsernames(accounts);
 
 let currentAccount;
+let sortDesc = true;
 
 const logIn = function (username, pin) {
   const account = accounts.find(
@@ -204,4 +211,31 @@ btnClose.addEventListener('click', function (e) {
   inputClosePin.value = inputCloseUsername.value = '';
   inputCloseUsername.blur();
   inputClosePin.blur();
+});
+
+btnLoan.addEventListener('click', function (e) {
+  e.preventDefault();
+  const loanAmount = Number(inputLoanAmount.value);
+  if (
+    loanAmount > 0 &&
+    currentAccount.movements.some(mov => mov >= loanAmount * 0.1)
+  ) {
+    currentAccount.movements.push(loanAmount);
+    addTransAndRefreshBalance(loanAmount, currentAccount);
+    calcDisplaySummary(currentAccount.movements, currentAccount.interestRate);
+  } else {
+    if (loanAmount > 0)
+      alert(
+        'Your account needs to have a positive movement of at least 10% the loan amount you request.'
+      );
+    else alert('The loan amount must be greater than 0.');
+  }
+  inputLoanAmount.value = '';
+  inputLoanAmount.blur();
+});
+
+btnSort.addEventListener('click', function (e) {
+  e.preventDefault();
+  displayMovements(currentAccount.movements, sortDesc);
+  sortDesc = !sortDesc;
 });
