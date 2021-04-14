@@ -100,6 +100,20 @@ const fromDateStringToFormmatedDate = function (dateString) {
   return `${day}/${month}/${year}`;
 };
 
+const getDaysDifference = function (lastDay, firstDay) {
+  let days = (lastDay - firstDay) / (1000 * 3600 * 24);
+  let daysInt = Math.trunc(days);
+  let daysDecimals = days - daysInt;
+  const lastDayStart = new Date(
+    lastDay.getFullYear,
+    lastDay.getMonth,
+    lastDay.getDate
+  );
+  const lastDayDecimal = (lastDay - lastDayStart) / (1000 * 3600 * 24);
+  daysDecimals > lastDayDecimal && daysInt++;
+  return daysInt;
+};
+
 const displayMovements = function (acc, sort = false) {
   containerMovements.innerHTML = '';
 
@@ -108,13 +122,40 @@ const displayMovements = function (acc, sort = false) {
     : acc.movements;
 
   movs.forEach(function (mov, i) {
+    let daysAgoString = 'days ago';
+    let daysAgo = getDaysDifference(Date.now(), acc.movementsDates[i]);
+    switch (daysAgo) {
+      case 0:
+        daysAgo = 'Today';
+        break;
+      case 1:
+        daysAgo = 'Yesterday';
+        break;
+      case 2:
+        daysAgo = '2 ' + daysAgoString;
+        break;
+      case 3:
+        daysAgo = '3 ' + daysAgoString;
+        break;
+      case 4:
+        daysAgo = '4 ' + daysAgoString;
+        break;
+      case 5:
+        daysAgo = '5 ' + daysAgoString;
+        break;
+      case 6:
+        daysAgo = '6 ' + daysAgoString;
+        break;
+      case 7:
+        daysAgo = '7 ' + daysAgoString;
+        break;
+      default:
+        daysAgo = acc.movementsDates[i];
+        break;
+    }
     containerMovements.insertAdjacentHTML(
       'afterbegin',
-      getHtmlMovString(
-        mov,
-        i,
-        fromDateStringToFormmatedDate(acc.movementsDates[i])
-      )
+      getHtmlMovString(mov, i, fromDateStringToFormmatedDate(daysAgo))
     );
   });
 };
