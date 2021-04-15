@@ -18,7 +18,7 @@ const account1 = {
     '2020-05-08T14:11:59.604Z',
     '2020-05-27T17:01:17.194Z',
     '2020-07-11T23:36:17.929Z',
-    '2020-07-12T10:51:36.790Z',
+    '2021-04-14T10:51:36.790Z',
   ],
   currency: 'EUR',
   locale: 'pt-PT', // de-DE
@@ -105,9 +105,9 @@ const getDaysDifference = function (lastDay, firstDay) {
   let daysInt = Math.trunc(days);
   let daysDecimals = days - daysInt;
   const lastDayStart = new Date(
-    lastDay.getFullYear,
-    lastDay.getMonth,
-    lastDay.getDate
+    lastDay.getFullYear(),
+    lastDay.getMonth(),
+    lastDay.getDate()
   );
   const lastDayDecimal = (lastDay - lastDayStart) / (1000 * 3600 * 24);
   daysDecimals > lastDayDecimal && daysInt++;
@@ -123,7 +123,10 @@ const displayMovements = function (acc, sort = false) {
 
   movs.forEach(function (mov, i) {
     let daysAgoString = 'days ago';
-    let daysAgo = getDaysDifference(Date.now(), acc.movementsDates[i]);
+    let daysAgo = getDaysDifference(
+      new Date(),
+      Date.parse(acc.movementsDates[i])
+    );
     switch (daysAgo) {
       case 0:
         daysAgo = 'Today';
@@ -150,12 +153,12 @@ const displayMovements = function (acc, sort = false) {
         daysAgo = '7 ' + daysAgoString;
         break;
       default:
-        daysAgo = acc.movementsDates[i];
+        daysAgo = fromDateStringToFormmatedDate(acc.movementsDates[i]);
         break;
     }
     containerMovements.insertAdjacentHTML(
       'afterbegin',
-      getHtmlMovString(mov, i, fromDateStringToFormmatedDate(daysAgo))
+      getHtmlMovString(mov, i, daysAgo)
     );
   });
 };
