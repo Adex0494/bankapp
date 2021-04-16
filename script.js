@@ -78,6 +78,9 @@ const inputLoanAmount = document.querySelector('.form__input--loan-amount');
 const inputCloseUsername = document.querySelector('.form__input--user');
 const inputClosePin = document.querySelector('.form__input--pin');
 
+const theLogOutTimer = 600;
+let logOutTimer = theLogOutTimer; //10 minutes to log out automatically
+
 // Functions
 
 const formatCurr = function (locale, currency, value) {
@@ -254,6 +257,37 @@ const createUsernames = function (accs) {
 //const movements = [200, 450, -400, 3000, -650, -130, 70, 1300];
 createUsernames(accounts);
 
+const fromSecondsToTimer = function (seconds) {
+  const theMinutes = Math.trunc(seconds / 60);
+  const theSeconds = seconds - theMinutes * 60;
+  return [theMinutes, theSeconds];
+};
+
+const setLogOutTimeText = function () {
+  const [minutes, seconds] = fromSecondsToTimer(logOutTimer);
+  labelTimer.textContent =
+    `${minutes}`.padStart(2, 0) + ':' + `${seconds}`.padStart(2, 0);
+};
+
+setLogOutTimeText();
+
+const startLogOutTimer = function () {
+  const interval = setInterval(() => {
+    logOutTimer--;
+    setLogOutTimeText();
+    if (logOutTimer === 0) {
+      clearInterval(interval);
+      containerApp.style.opacity = 0;
+      alert(
+        `You have been automatically logged out for being iddle for ${Math.trunc(
+          theLogOutTimer / 60
+        )} minutes`
+      );
+      logOutTimer = theLogOutTimer;
+    }
+  }, 1000);
+};
+
 let currentAccount;
 let sortDesc = true;
 const logIn = function (username, pin) {
@@ -287,6 +321,7 @@ const logIn = function (username, pin) {
     inputLoginUsername.value = inputLoginPin.value = '';
     inputCloseUsername.blur();
     inputLoginPin.blur();
+    startLogOutTimer();
   }
 };
 
@@ -358,10 +393,12 @@ btnLoan.addEventListener('click', function (e) {
     loanAmount > 0 &&
     currentAccount.movements.some(mov => mov >= loanAmount * 0.1)
   ) {
-    currentAccount.movements.push(loanAmount);
-    currentAccount.movementsDates.push(new Date().toISOString());
-    addTransAndRefreshBalance(loanAmount, currentAccount);
-    calcDisplaySummary(currentAccount.movements, currentAccount.interestRate);
+    setTimeout(function () {
+      currentAccount.movements.push(loanAmount);
+      currentAccount.movementsDates.push(new Date().toISOString());
+      addTransAndRefreshBalance(loanAmount, currentAccount);
+      calcDisplaySummary(currentAccount.movements, currentAccount.interestRate);
+    }, 2500);
   } else {
     if (loanAmount > 0)
       alert(
