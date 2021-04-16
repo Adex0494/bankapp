@@ -78,8 +78,9 @@ const inputLoanAmount = document.querySelector('.form__input--loan-amount');
 const inputCloseUsername = document.querySelector('.form__input--user');
 const inputClosePin = document.querySelector('.form__input--pin');
 
+let currentInterval;
 const theLogOutTimer = 600;
-let logOutTimer = theLogOutTimer; //10 minutes to log out automatically
+let logOutTimer; //10 minutes to log out automatically
 
 // Functions
 
@@ -259,7 +260,7 @@ createUsernames(accounts);
 
 const fromSecondsToTimer = function (seconds) {
   const theMinutes = Math.trunc(seconds / 60);
-  const theSeconds = seconds - theMinutes * 60;
+  const theSeconds = seconds % 60;
   return [theMinutes, theSeconds];
 };
 
@@ -269,21 +270,20 @@ const setLogOutTimeText = function () {
     `${minutes}`.padStart(2, 0) + ':' + `${seconds}`.padStart(2, 0);
 };
 
-setLogOutTimeText();
-
 const startLogOutTimer = function () {
-  const interval = setInterval(() => {
+  currentInterval = setInterval(() => {
     logOutTimer--;
     setLogOutTimeText();
     if (logOutTimer === 0) {
-      clearInterval(interval);
       containerApp.style.opacity = 0;
-      alert(
-        `You have been automatically logged out for being iddle for ${Math.trunc(
-          theLogOutTimer / 60
-        )} minutes`
-      );
+      labelWelcome.textContent = 'Log in to get started';
+      // alert(
+      //   `You have been automatically logged out for being iddle for ${Math.trunc(
+      //     theLogOutTimer / 60
+      //   )} minutes`
+      // );
       logOutTimer = theLogOutTimer;
+      clearInterval(currentInterval);
     }
   }, 1000);
 };
@@ -291,6 +291,8 @@ const startLogOutTimer = function () {
 let currentAccount;
 let sortDesc = true;
 const logIn = function (username, pin) {
+  logOutTimer = theLogOutTimer;
+  currentInterval && clearInterval(currentInterval);
   const account = accounts.find(
     acc => acc.username === username && acc.pin === Number(pin)
   );
@@ -298,6 +300,7 @@ const logIn = function (username, pin) {
     containerApp.style.opacity = 0;
     alert('Username or pin incorrect.');
   } else {
+    setLogOutTimeText();
     currentAccount = account;
     const now = new Date();
     const options = {
@@ -326,7 +329,7 @@ const logIn = function (username, pin) {
 };
 
 //Test login
-logIn('ade', 1111);
+//logIn('ade', 1111);
 // console.log(`Date.now(): ${Date.now()}`);
 // console.log(`new Date().toISOString(): ${new Date().toISOString()}`);
 // console.log(`new Date(): ${new Date()}`);
@@ -357,9 +360,13 @@ btnTransfer.addEventListener('click', function (e) {
     destinAcc &&
     destinAcc.username !== currentAccount.username &&
     Number(inputTransferAmount.value) > 0
-  )
+  ) {
     transferMoney(currentAccount, destinAcc, Number(inputTransferAmount.value));
-  else {
+    logOutTimer = theLogOutTimer;
+    clearInterval(currentInterval);
+    setLogOutTimeText();
+    startLogOutTimer();
+  } else {
     alert('There is a problem with the transaction');
   }
   inputTransferTo.value = inputTransferAmount.value = '';
@@ -379,6 +386,8 @@ btnClose.addEventListener('click', function (e) {
     );
     alert('The account has been eliminated succesfully');
 
+    clearInterval(currentInterval);
+
     containerApp.style.opacity = 0;
   } else alert('Incorrect credentials');
   inputClosePin.value = inputCloseUsername.value = '';
@@ -393,6 +402,10 @@ btnLoan.addEventListener('click', function (e) {
     loanAmount > 0 &&
     currentAccount.movements.some(mov => mov >= loanAmount * 0.1)
   ) {
+    logOutTimer = theLogOutTimer;
+    clearInterval(currentInterval);
+    setLogOutTimeText();
+    startLogOutTimer();
     setTimeout(function () {
       currentAccount.movements.push(loanAmount);
       currentAccount.movementsDates.push(new Date().toISOString());
